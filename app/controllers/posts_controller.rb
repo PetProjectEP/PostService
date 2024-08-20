@@ -5,7 +5,7 @@ class PostsController < ApplicationController
   def index
     @posts = Post.all
 
-    render json: @posts
+    render json: @posts.to_json(only: %i[title text])
   end
 
   # GET /posts/1
