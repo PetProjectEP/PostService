@@ -1,4 +1,5 @@
 class PostsController < ApplicationController
+  include UserServiceReqs
   before_action :set_post, only: %i[ show update destroy ]
 
   # GET /posts
