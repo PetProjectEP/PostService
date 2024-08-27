@@ -16,13 +16,19 @@ class PostsController < ApplicationController
 
   # POST /posts
   def create
-    @post = Post.new(post_params)
+    @user_id = get_user_by_session(post_params[:token])
 
-    if @post.save
-      render json: @post, status: :created, location: @post
+    unless @user_id
+      @post = Post.new({ title: post_params[:title], text: post_params[:text], user_id: @user_id })              
+      
+      if @post.save
+        render json: @post, status: :created, location: @post
+      else
+        render json: @post.errors, status: :unprocessable_entity
+      end
     else
-      render json: @post.errors, status: :unprocessable_entity
-    end
+      render json: { error: "User service error" }, status: :service_unavailable
+    end   
   end
 
   # PATCH/PUT /posts/1
@@ -45,6 +51,6 @@ class PostsController < ApplicationController
     end
 
     def post_params
-      params.require(:post).permit(:title, :text)
+      params.require(:post).permit(:title, :text, :token)
     end
 end

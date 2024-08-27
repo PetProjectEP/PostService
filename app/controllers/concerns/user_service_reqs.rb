@@ -9,7 +9,7 @@ module UserServiceReqs
     def get_user_by_session(token)
       response = HTTP.get(GET_USER_BY_SESSION_URL + token)
 
-      # 0-idx here because of how HTTP-gem parser works
+      # 0-idx is here because of how HTTP-gem parser works
       return eval(response.body.to_a[0]) 
     end    
   end
