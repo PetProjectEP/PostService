@@ -16,9 +16,9 @@ class PostsController < ApplicationController
 
   # POST /posts
   def create
-    @user_id = get_user_by_session(post_params[:token])
+    @user_id = get_user_by_session(post_params[:token])[:id]
 
-    unless @user_id
+    unless @user_id.nil?
       @post = Post.new({ title: post_params[:title], text: post_params[:text], user_id: @user_id })              
       
       if @post.save
