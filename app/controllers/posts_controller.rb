@@ -2,6 +2,15 @@ class PostsController < ApplicationController
   include UserServiceReqs
   before_action :set_post, only: %i[ show update destroy ]
 
+  def get_next_five_posts
+    starting_index = get_posts_params[:id] ? get_posts_params[:id] : 1
+    count = 5
+    
+    @posts = Post.where("id >= ?", starting_index).limit(count)
+
+    render json: @posts.to_json(only: %i[title text id])
+  end
+
   # GET /posts
   def index
     @posts = Post.all
@@ -52,5 +61,9 @@ class PostsController < ApplicationController
 
     def post_params
       params.require(:post).permit(:title, :text, :token)
+    end
+
+    def get_posts_params
+      params.permit(:id)
     end
 end
