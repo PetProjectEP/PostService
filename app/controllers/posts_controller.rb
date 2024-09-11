@@ -3,21 +3,24 @@ class PostsController < ApplicationController
   before_action :set_post, only: %i[ show update destroy ]
 
   def get_next_five_posts
-    starting_index = get_posts_params[:id] ? get_posts_params[:id] : 0
     count = 5
+
+    last_post_id = Post.last ? Post.last.id : -1
+    starting_index = get_posts_params[:id] ? get_posts_params[:id] : last_post_id
     
-    @posts = Post.where("id > ?", starting_index).limit(count)
-    @have_more = Post.exists?(["id > ?", @posts.last.id])
+    @posts = Post.where("id <= ?", starting_index).order(id: :desc).limit(count)
+    @have_more = last_post_id == -1 ? false : Post.exists?(["id < ?", @posts.last.id])
 
     render json: {posts: @posts.to_json(only: %i[title text id]), haveMore: @have_more}
   end
 
   def get_prev_five_posts
-    starting_index = get_posts_params[:id]
     count = 5
+
+    starting_index = get_posts_params[:id]
     
-    @posts = Post.where("id < ?", starting_index).limit(count)
-    @have_more = Post.exists?(["id < ?", @posts[0]])
+    @posts = Post.where("id >= ?", starting_index).order(id: :desc).limit(count)
+    @have_more = Post.exists?(["id > ?", @posts[0]])
 
     render json: {posts: @posts.to_json(only: %i[title text id]), haveMore: @have_more}
   end
