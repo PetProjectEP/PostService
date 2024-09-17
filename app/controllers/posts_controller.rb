@@ -19,7 +19,9 @@ class PostsController < ApplicationController
 
     starting_index = get_posts_params[:id]
     
-    @posts = Post.where("id >= ?", starting_index).order(id: :desc).limit(count)
+    # Cant use .limit cause it will cut result after sorting returning TOP posts, not BOTTOM as needed
+    @posts = Post.where("id >= ?", starting_index).order(id: :desc)
+    @posts = @posts.last(count)
     @have_more = Post.exists?(["id > ?", @posts[0]])
 
     render json: {posts: @posts.to_json(only: %i[title text id]), haveMore: @have_more}
