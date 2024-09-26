@@ -31,6 +31,43 @@ RSpec.describe "Posts", type: :request do
 
         expect(is_descending).to be true  
       end
+
+      it "returns posts with id <= id in params" do
+        id = 7
+        get "/get_next_five_posts", params: { id: id }
+        raw_data = JSON.parse(response.body)["posts"]
+        posts = JSON.parse(raw_data, symbolize_names: true)
+
+        is_lesser_than_id = true
+        posts.each { |p| is_lesser_than_id &&= p[:id] <= id }
+
+        expect(is_lesser_than_id).to be true
+      end
+    end
+
+    describe "GET get_prev_five_posts(/:id)" do
+      it "returns posts in descending order" do
+        get "/get_prev_five_posts"
+        raw_data = JSON.parse(response.body)["posts"]
+        posts = JSON.parse(raw_data, symbolize_names: true)
+
+        is_descending = true
+        posts.drop(1).each_with_index { |p, i| is_descending = posts[i][:id] < posts[i - 1][:id] }
+
+        expect(is_descending).to be true  
+      end
+
+      it "returns 5 posts with id >= id in params" do
+        id = 7
+        get "/get_prev_five_posts", params: { id: id }
+        raw_data = JSON.parse(response.body)["posts"]
+        posts = JSON.parse(raw_data, symbolize_names: true)
+
+        is_greater_than_id = true
+        posts.each { |p| is_lesser_than_id &&= p[:id] >= id }
+
+        expect(is_greater_than_id).to be true
+      end
     end
   end
 end
