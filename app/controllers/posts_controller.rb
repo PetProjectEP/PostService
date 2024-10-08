@@ -1,15 +1,21 @@
 class PostsController < ApplicationController
   include UserServiceReqs
   before_action :set_post, only: %i[ show update destroy ]
+  before_action :get_user_id, only: %i[ create get_prev_five_posts get_next_five_posts ]
+  before_action :get_posts_params, only: %i[ get_prev_five_posts get_next_five_posts ]
 
   def get_next_five_posts
     count = 5
 
-    last_post_id = Post.last ? Post.last.id : -1
-    starting_index = get_posts_params[:id] ? get_posts_params[:id] : last_post_id
+    starting_index = get_posts_params[:id] ? get_posts_params[:id] : Post.last[:id]
     
-    @posts = Post.where("id <= ?", starting_index).order(id: :desc).limit(count)
-    @have_more = last_post_id == -1 ? false : Post.exists?(["id < ?", @posts.last.id])
+    if @user_id.nil?
+      @posts = Post.where("id <= ?", starting_index).order(id: :desc).limit(count)
+      @have_more = @posts.empty? ? false : Post.exists?(["id < ?", @posts.last.id])
+    else
+      @posts = Post.where("id <= ? && user_id = ?", starting_index, @user_id).order(id: :desc).limit(count)
+      @have_more = @posts.empty? ? false : Post.exists?(["id < ? && user_id = ?", @posts.last.id, @user_id])
+    end
 
     render json: {posts: @posts.to_json(only: %i[title text id]), haveMore: @have_more}
   end
@@ -19,9 +25,14 @@ class PostsController < ApplicationController
 
     starting_index = get_posts_params[:id]
     
-    # Cant use .limit cause it will cut result after sorting returning TOP posts, not BOTTOM as needed
-    @posts = Post.where("id >= ?", starting_index).order(id: :desc).last(count)
-    @have_more = Post.exists?(["id > ?", @posts[0]])
+    if @user_id.nil?
+      # Cant use .limit cause it will cut result after sorting returning TOP posts, not BOTTOM as needed
+      @posts = Post.where("id >= ?", starting_index).order(id: :desc).last(count)
+      @have_more = @posts.empty? ? false : Post.exists?(["id > ?", @posts[0]])
+    else
+      @posts = Post.where("id >= ? && user_id = ?", starting_index, @user_id).order(id: :desc).last(count)
+      @have_more = @posts.empty? ? false : Post.exists?(["id > ? && user_id = ?", @posts[0], @user_id])
+    end
 
     render json: {posts: @posts.to_json(only: %i[title text id]), haveMore: @have_more}
   end
@@ -40,8 +51,6 @@ class PostsController < ApplicationController
 
   # POST /posts
   def create
-    @user_id = get_user_by_session(post_params[:token])[:id]
-
     unless @user_id.nil?
       @post = Post.new({ title: post_params[:title], text: post_params[:text], user_id: @user_id })              
       
@@ -74,11 +83,20 @@ class PostsController < ApplicationController
       @post = Post.find(params[:id])
     end
 
-    def post_params
-      params.require(:post).permit(:title, :text, :token)
+    def get_user_id
+      token = params[:token]
+      return nil if token == "null" || token.empty?
+
+      @user_id = get_user_by_session(token)[:id]
     end
 
+    # Params for POST requests
+    def post_params
+      params.permit(:title, :text, :token)
+    end
+
+    # Params for GET get_(some)_posts methods
     def get_posts_params
-      params.permit(:id)
+      params.permit(:id, :token)
     end
 end
