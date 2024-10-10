@@ -85,7 +85,7 @@ class PostsController < ApplicationController
 
     def get_user_id
       token = params[:token]
-      return nil if token == "null" || token.empty?
+      return nil if token.nil? || token == "null" || token.empty?
 
       @user_id = get_user_by_session(token)[:id]
     end
