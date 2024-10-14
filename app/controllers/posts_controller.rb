@@ -1,7 +1,7 @@
 class PostsController < ApplicationController
   include UserServiceReqs
   before_action :set_post, only: %i[ show update destroy ]
-  before_action :get_user_id, only: %i[ create get_prev_five_posts get_next_five_posts ]
+  before_action :get_user_id, only: %i[ create destroy get_prev_five_posts get_next_five_posts ]
   before_action :get_posts_params, only: %i[ get_prev_five_posts get_next_five_posts ]
 
   def get_next_five_posts
@@ -17,7 +17,7 @@ class PostsController < ApplicationController
       @have_more = @posts.empty? ? false : Post.exists?(["id < ? && user_id = ?", @posts.last.id, @user_id])
     end
 
-    render json: {posts: @posts.to_json(only: %i[title text id]), haveMore: @have_more}
+    render json: {posts: @posts.to_json, haveMore: @have_more}
   end
 
   def get_prev_five_posts
@@ -34,14 +34,7 @@ class PostsController < ApplicationController
       @have_more = @posts.empty? ? false : Post.exists?(["id > ? && user_id = ?", @posts[0], @user_id])
     end
 
-    render json: {posts: @posts.to_json(only: %i[title text id]), haveMore: @have_more}
-  end
-
-  # GET /posts
-  def index
-    @posts = Post.all
-
-    render json: @posts.to_json(only: %i[title text])
+    render json: {posts: @posts.to_json, haveMore: @have_more}
   end
 
   # GET /posts/1
@@ -75,7 +68,9 @@ class PostsController < ApplicationController
 
   # DELETE /posts/1
   def destroy
-    @post.destroy!
+    unless @user_id.nil?
+      @post.destroy! if @user_id == @post[:user_id]
+    end
   end
 
   private
