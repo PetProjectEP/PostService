@@ -1,7 +1,7 @@
 class PostsController < ApplicationController
   include UserServiceReqs
+  before_action :get_user_id
   before_action :set_post, only: %i[ show update destroy ]
-  before_action :get_user_id, only: %i[ create destroy get_prev_five_posts get_next_five_posts ]
   before_action :get_posts_params, only: %i[ get_prev_five_posts get_next_five_posts ]
 
   def get_next_five_posts
@@ -59,7 +59,8 @@ class PostsController < ApplicationController
 
   # PATCH/PUT /posts/1
   def update
-    if @post.update(post_params)
+    unless @user_id != @post[:user_id]
+      @post.update(title: post_params[:title], text: post_params[:text])
       render json: @post
     else
       render json: @post.errors, status: :unprocessable_entity
@@ -68,14 +69,14 @@ class PostsController < ApplicationController
 
   # DELETE /posts/1
   def destroy
-    unless @user_id.nil?
-      @post.destroy! if @user_id == @post[:user_id]
+    unless @user_id != @post[:user_id]
+      @post.destroy!
     end
   end
 
   private
     def set_post
-      @post = Post.find(params[:id])
+      @post = Post.find(get_posts_params[:id])
     end
 
     def get_user_id
