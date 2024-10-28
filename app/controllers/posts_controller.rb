@@ -2,12 +2,11 @@ class PostsController < ApplicationController
   include UserServiceReqs
   before_action :get_user_id
   before_action :set_post, only: %i[ show update destroy ]
-  before_action :get_posts_params, only: %i[ get_prev_five_posts get_next_five_posts ]
 
   def get_next_five_posts
     count = 5
-
-    starting_index = get_posts_params[:id] ? get_posts_params[:id] : Post.last[:id]
+    
+    starting_index = navigation_params[:id] ? navigation_params[:id] : Post.last[:id]
     
     if @user_id.nil?
       @posts = Post.where("id <= ?", starting_index).order(id: :desc).limit(count)
@@ -23,7 +22,7 @@ class PostsController < ApplicationController
   def get_prev_five_posts
     count = 5
 
-    starting_index = get_posts_params[:id]
+    starting_index = navigation_params[:id]
     
     if @user_id.nil?
       # Cant use .limit cause it will cut result after sorting returning TOP posts, not BOTTOM as needed
@@ -75,24 +74,23 @@ class PostsController < ApplicationController
   end
 
   private
-    def set_post
-      @post = Post.find(get_posts_params[:id])
+    def post_params
+      params.permit(:title, :text, :id)
+    end
+
+    def navigation_params
+      params.permit(:id)
     end
 
     def get_user_id
-      token = params[:token]
+      # I want token param to be nowhere else but in this method
+      token = params.extract!(:token)[:token]
       return nil if token.nil? || token == "null" || token.empty?
 
       @user_id = get_user_by_session(token)[:id]
     end
 
-    # Params for POST requests
-    def post_params
-      params.permit(:title, :text, :token)
-    end
-
-    # Params for GET get_(some)_posts methods
-    def get_posts_params
-      params.permit(:id, :token)
+    def set_post
+      @post = Post.find(post_params[:id])
     end
 end
