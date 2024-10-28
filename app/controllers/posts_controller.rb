@@ -43,10 +43,7 @@ class PostsController < ApplicationController
 
   # POST /posts
   def create
-    if @user_id.nil?
-      render json: { error: "No user!" }, status: :unauthorized
-      return
-    end
+    verify_user_presence or return
     
     post = Post.new({
       title: post_params[:title],
@@ -63,10 +60,8 @@ class PostsController < ApplicationController
 
   # PATCH/PUT /posts/1
   def update
-    if @user_id != @post[:user_id]
-      render json: { error: "Passed user can't modify this post!"}, status: :forbidden
-      return
-    end
+    verify_user_presence or return
+    verify_post_owner    or return
 
     if @post.update(title: post_params[:title], text: post_params[:text])
       render json: @post, status: :ok
@@ -77,10 +72,8 @@ class PostsController < ApplicationController
 
   # DELETE /posts/1
   def destroy
-    if @user_id != @post[:user_id]
-      render json: { error: "Passed user can't modify this post!"}, status: :forbidden
-      return
-    end
+    verify_user_presence or return
+    verify_post_owner    or return
 
     if @post.destroy
       render json: {}, status: :ok
@@ -90,12 +83,20 @@ class PostsController < ApplicationController
   end
 
   private
-    def post_params
-      params.permit(:title, :text, :id)
+    def verify_user_presence
+      if @user_id.nil?
+        render json: { error: "No user!" }, status: :unauthorized
+        return false
+      end
+      return true
     end
 
-    def navigation_params
-      params.permit(:id)
+    def verify_post_owner
+      if @user_id != @post[:user_id]
+        render json: { error: "Passed user can't modify this post!"}, status: :forbidden
+        return false
+      end
+      return true
     end
 
     def get_user_id
@@ -104,6 +105,14 @@ class PostsController < ApplicationController
       return nil if token.nil? || token == "null" || token.empty?
 
       @user_id = get_user_by_session(token)[:id]
+    end
+
+    def post_params
+      params.permit(:title, :text, :id)
+    end
+
+    def navigation_params
+      params.permit(:id)
     end
 
     def set_post
