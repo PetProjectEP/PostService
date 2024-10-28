@@ -43,24 +43,33 @@ class PostsController < ApplicationController
 
   # POST /posts
   def create
-    unless @user_id.nil?
-      @post = Post.new({ title: post_params[:title], text: post_params[:text], user_id: @user_id })              
-      
-      if @post.save
-        render json: @post, status: :created, location: @post
-      else
-        render json: @post.errors, status: :unprocessable_entity
-      end
+    if @user_id.nil?
+      render json: { error: "No user!" }, status: :unauthorized
+      return
+    end
+    
+    post = Post.new({
+      title: post_params[:title],
+      text: post_params[:text],
+      user_id: @user_id
+    })
+
+    if post.save
+      render json: post, status: :created
     else
-      render json: { error: "User service error" }, status: :service_unavailable
-    end   
+      render json: post.errors, status: :unprocessable_entity
+    end 
   end
 
   # PATCH/PUT /posts/1
   def update
-    unless @user_id != @post[:user_id]
-      @post.update(title: post_params[:title], text: post_params[:text])
-      render json: @post
+    if @user_id != @post[:user_id]
+      render json: { error: "Passed user can't modify this post!"}, status: :forbidden
+      return
+    end
+
+    if @post.update(title: post_params[:title], text: post_params[:text])
+      render json: @post, status: :ok
     else
       render json: @post.errors, status: :unprocessable_entity
     end
@@ -68,8 +77,15 @@ class PostsController < ApplicationController
 
   # DELETE /posts/1
   def destroy
-    unless @user_id != @post[:user_id]
-      @post.destroy!
+    if @user_id != @post[:user_id]
+      render json: { error: "Passed user can't modify this post!"}, status: :forbidden
+      return
+    end
+
+    if @post.destroy
+      render json: {}, status: :ok
+    else
+      render json: @post.errors, status: :unprocessable_entity
     end
   end
 
