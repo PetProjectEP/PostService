@@ -1,7 +1,11 @@
 class PostsController < ApplicationController
   include UserServiceReqs
+  include UserValidations
+
   before_action :get_user_id
   before_action :set_post, only: %i[ show update destroy ]
+  before_action :verify_user_presence, only: %i[ create update destroy ]
+  before_action :verify_post_owner, only: %i[ update destroy ]
 
   def get_next_five_posts
     count = 5
@@ -43,8 +47,6 @@ class PostsController < ApplicationController
 
   # POST /posts
   def create
-    verify_user_presence or return
-    
     post = Post.new({
       title: post_params[:title],
       text: post_params[:text],
@@ -60,9 +62,6 @@ class PostsController < ApplicationController
 
   # PATCH/PUT /posts/1
   def update
-    verify_user_presence or return
-    verify_post_owner    or return
-
     if @post.update(title: post_params[:title], text: post_params[:text])
       render json: @post, status: :ok
     else
@@ -72,9 +71,6 @@ class PostsController < ApplicationController
 
   # DELETE /posts/1
   def destroy
-    verify_user_presence or return
-    verify_post_owner    or return
-
     if @post.destroy
       render json: {}, status: :ok
     else
@@ -83,22 +79,6 @@ class PostsController < ApplicationController
   end
 
   private
-    def verify_user_presence
-      if @user_id.nil?
-        render json: { error: "No user!" }, status: :unauthorized
-        return false
-      end
-      return true
-    end
-
-    def verify_post_owner
-      if @user_id != @post[:user_id]
-        render json: { error: "Passed user can't modify this post!"}, status: :forbidden
-        return false
-      end
-      return true
-    end
-
     def get_user_id
       # I want token param to be nowhere else but in this method
       token = params.extract!(:token)[:token]
