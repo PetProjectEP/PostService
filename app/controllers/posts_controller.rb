@@ -7,6 +7,25 @@ class PostsController < ApplicationController
   before_action :verify_user_presence, only: %i[ create update destroy ]
   before_action :verify_post_owner, only: %i[ update destroy ]
 
+  def list
+    limit = [Integer(navigation_params[:limit]), 50].min # Hard capping output posts number
+    starting_id = navigation_params[:starting_id] ? navigation_params[:starting_id] : Post.last[:id]
+
+    newer_posts = Post.where("id > ?", starting_id).order(id: :asc).limit(limit)
+    newer_page_id = newer_posts.empty? ? nil : newer_posts.last[:id]
+
+    posts = Post.where("id <= ?", starting_id).order(id: :desc).limit(limit + 1).to_a
+
+    # If we grabbed one more post then there is next page to display from it
+    older_page_id = posts.length == limit + 1 ? posts.pop[:id] : nil
+
+    render json: { 
+      posts: posts.to_json,
+      newer_page_id: newer_page_id,
+      older_page_id: older_page_id 
+    }
+  end
+
   def get_next_five_posts
     count = 5
     
@@ -92,7 +111,7 @@ class PostsController < ApplicationController
     end
 
     def navigation_params
-      params.permit(:id)
+      params.permit(:starting_id, :limit)
     end
 
     def set_post
