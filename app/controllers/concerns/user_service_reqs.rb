@@ -6,7 +6,6 @@ module UserServiceReqs
 
   SESSIONS_URL = YAML.load_file(Rails.root.join("config", "external_urls.yml"))["sessions_urls"]
   
-  public
   included do
     def get_user_by_session(token)
       response = HTTP.get(SESSIONS_URL + token)
