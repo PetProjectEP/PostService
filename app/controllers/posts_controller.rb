@@ -11,13 +11,17 @@ class PostsController < ApplicationController
     limit = [Integer(navigation_params[:limit]), 50].min # Hard capping output posts number
     starting_id = navigation_params[:starting_id] ? navigation_params[:starting_id] : Post.last[:id]
 
-    newer_posts = Post.where("id > ?", starting_id).order(id: :asc).limit(limit)
+    # Probably will need some query builder
+    if @user_id.nil?
+      newer_posts = Post.where("id > ?", starting_id).order(id: :asc).limit(limit)
+      posts = Post.where("id <= ?", starting_id).order(id: :desc).limit(limit + 1).to_a
+    else
+      newer_posts = Post.where("id > ? AND user_id = ?", starting_id, @user_id).order(id: :asc).limit(limit)
+      posts = Post.where("id <= ? AND user_id = ?", starting_id, @user_id).order(id: :desc).limit(limit + 1).to_a
+    end
+    
     newer_page_id = newer_posts.empty? ? nil : newer_posts.last[:id]
-
-    posts = Post.where("id <= ?", starting_id).order(id: :desc).limit(limit + 1).to_a
-
-    # If we grabbed one more post then there is next page to display from it
-    older_page_id = posts.length == limit + 1 ? posts.pop[:id] : nil
+    older_page_id = posts.length == limit + 1 ? posts.pop[:id] : nil  # If we grabbed one more post then there is next page to display from it
 
     render json: { 
       posts: posts.to_json,
