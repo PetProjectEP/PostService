@@ -30,39 +30,6 @@ class PostsController < ApplicationController
     }
   end
 
-  def get_next_five_posts
-    count = 5
-    
-    starting_index = navigation_params[:id] ? navigation_params[:id] : Post.last[:id]
-    
-    if @user_id.nil?
-      @posts = Post.where("id <= ?", starting_index).order(id: :desc).limit(count)
-      @have_more = @posts.empty? ? false : Post.exists?(["id < ?", @posts.last.id])
-    else
-      @posts = Post.where("id <= ? && user_id = ?", starting_index, @user_id).order(id: :desc).limit(count)
-      @have_more = @posts.empty? ? false : Post.exists?(["id < ? && user_id = ?", @posts.last.id, @user_id])
-    end
-
-    render json: {posts: @posts.to_json, haveMore: @have_more}
-  end
-
-  def get_prev_five_posts
-    count = 5
-
-    starting_index = navigation_params[:id]
-    
-    if @user_id.nil?
-      # Cant use .limit cause it will cut result after sorting returning TOP posts, not BOTTOM as needed
-      @posts = Post.where("id >= ?", starting_index).order(id: :desc).last(count)
-      @have_more = @posts.empty? ? false : Post.exists?(["id > ?", @posts[0]])
-    else
-      @posts = Post.where("id >= ? && user_id = ?", starting_index, @user_id).order(id: :desc).last(count)
-      @have_more = @posts.empty? ? false : Post.exists?(["id > ? && user_id = ?", @posts[0], @user_id])
-    end
-
-    render json: {posts: @posts.to_json, haveMore: @have_more}
-  end
-
   # GET /posts/1
   def show
     render json: @post
