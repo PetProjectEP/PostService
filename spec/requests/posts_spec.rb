@@ -11,62 +11,60 @@ RSpec.describe "Posts", type: :request do
   end
 
   describe "navigation methods," do
-    describe "GET get_next_five_posts(/:id)" do
-      it "returns 5 latest posts if no argument is given" do
-        get "/get_next_five_posts"
-        raw_data = JSON.parse(response.body)["posts"]
-        posts = JSON.parse(raw_data, symbolize_names: true)
+    describe "GET list" do
+      it "returns latest posts if no starting id is given" do
+        limit = 5
+        get "/posts/list", params: { limit: limit }
+
+        raw_posts = JSON.parse(response.body)["posts"]
+        posts = JSON.parse(raw_posts, symbolize_names: true)
+
+        newer_page_id = JSON.parse(response.body)["newer_page_id"]
+        older_page_id = JSON.parse(response.body)["older_page_id"]
+
+        expect(posts.length).to eq(limit)
+        expect(posts[0][:id]).to eq(@posts.last[:id])
+        expect(posts.last[:id]).to eq(@posts[-limit][:id])
+        expect(newer_page_id).to be_nil
+        expect(older_page_id).to eq(posts.last[:id] - 1)
+      end
+
+      it "returns posts from given starting point" do
+        limit, offset = 5, 5
+        starting_id = @posts.last[:id] - offset
+        starting_arr_idx = @posts.index { |p| p[:id] == starting_id }
+
+        get "/posts/list", params: { limit: limit, starting_id: starting_id }
+
+        raw_posts = JSON.parse(response.body)["posts"]
+        posts = JSON.parse(raw_posts, symbolize_names: true)
+
+        newer_page_id = JSON.parse(response.body)["newer_page_id"]
+        older_page_id = JSON.parse(response.body)["older_page_id"]
         
-        expect(posts.length).to eq(5)
-        expect(posts[0][:title]).to eq(@posts.last[:title])
+        expect(posts.length).to eq(limit)
+        expect(posts[0][:id]).to eq(@posts[starting_arr_idx][:id])
+        expect(posts.last[:id]).to eq(@posts[starting_arr_idx - limit + 1][:id])
+        expect(newer_page_id).to eq([posts[0][:id] + limit, @posts.last[:id]].min)
+        expect(older_page_id).to eq(posts.last[:id] - 1)
       end
 
-      it "returns posts in descending order" do
-        get "/get_next_five_posts"
-        raw_data = JSON.parse(response.body)["posts"]
-        posts = JSON.parse(raw_data, symbolize_names: true)
+      it "returns posts even if there are less posts than required" do
+        limit = 30
 
-        is_descending = true
-        posts.drop(1).each_with_index { |p, i| is_descending = posts[i][:id] < posts[i - 1][:id] }
+        get "/posts/list", params: { limit: limit }
 
-        expect(is_descending).to be true  
-      end
+        raw_posts = JSON.parse(response.body)["posts"]
+        posts = JSON.parse(raw_posts, symbolize_names: true)
 
-      it "returns posts with id <= id in params" do
-        id = 7
-        get "/get_next_five_posts", params: { id: id }
-        raw_data = JSON.parse(response.body)["posts"]
-        posts = JSON.parse(raw_data, symbolize_names: true)
-
-        is_lesser_than_id = true
-        posts.each { |p| is_lesser_than_id &&= p[:id] <= id }
-
-        expect(is_lesser_than_id).to be true
-      end
-    end
-
-    describe "GET get_prev_five_posts(/:id)" do
-      it "returns posts in descending order" do
-        get "/get_prev_five_posts"
-        raw_data = JSON.parse(response.body)["posts"]
-        posts = JSON.parse(raw_data, symbolize_names: true)
-
-        is_descending = true
-        posts.drop(1).each_with_index { |p, i| is_descending = posts[i][:id] < posts[i - 1][:id] }
-
-        expect(is_descending).to be true  
-      end
-
-      it "returns 5 posts with id >= id in params" do
-        id = 7
-        get "/get_prev_five_posts", params: { id: id }
-        raw_data = JSON.parse(response.body)["posts"]
-        posts = JSON.parse(raw_data, symbolize_names: true)
-
-        is_greater_than_id = true
-        posts.each { |p| is_lesser_than_id &&= p[:id] >= id }
-
-        expect(is_greater_than_id).to be true
+        newer_page_id = JSON.parse(response.body)["newer_page_id"]
+        older_page_id = JSON.parse(response.body)["older_page_id"]
+        
+        expect(posts.length).to eq(@posts.length)
+        expect(posts[0][:id]).to eq(@posts.last[:id])
+        expect(posts.last[:id]).to eq(@posts[0][:id])
+        expect(newer_page_id).to be_nil
+        expect(older_page_id).to be_nil
       end
     end
   end
