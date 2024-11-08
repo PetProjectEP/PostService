@@ -30,12 +30,6 @@ class PostsController < ApplicationController
     }
   end
 
-  # GET /posts/1
-  def show
-    render json: @post
-  end
-
-  # POST /posts
   def create
     post = Post.new({
       title: post_params[:title],
@@ -50,7 +44,6 @@ class PostsController < ApplicationController
     end 
   end
 
-  # PATCH/PUT /posts/1
   def update
     if @post.update(title: post_params[:title], text: post_params[:text])
       render json: @post, status: :ok
@@ -59,7 +52,6 @@ class PostsController < ApplicationController
     end
   end
 
-  # DELETE /posts/1
   def destroy
     if @post.destroy
       render json: {}, status: :ok
