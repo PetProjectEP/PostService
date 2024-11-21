@@ -51,6 +51,9 @@ RUN useradd rails --create-home --shell /bin/bash && \
     chown -R rails:rails db log storage tmp
 USER rails:rails
 
+ENV POST_SERVICE_DATABASE_USERNAME="post_service" \
+    USER_SERVICE_SESSIONS_PATH="/sessions"
+
 # Entrypoint prepares the database.
 ENTRYPOINT ["/rails/bin/docker-entrypoint"]
 
