@@ -3,13 +3,19 @@ class PostsController < ApplicationController
   include UserValidations
 
   before_action :get_user_id
-  before_action :set_post, only: %i[ show update destroy ]
+  before_action :set_post, only: %i[ update destroy ]
   before_action :verify_user_presence, only: %i[ create update destroy ]
   before_action :verify_post_owner, only: %i[ update destroy ]
 
   def list
     limit = [Integer(navigation_params[:limit]), 50].min # Hard capping output posts number
-    starting_id = navigation_params[:starting_id] ? navigation_params[:starting_id] : Post.last[:id]
+
+    starting_id = nil
+    if navigation_params[:starting_id]
+      starting_id = navigation_params[:starting_id]
+    elsif Post.last
+      starting_id = Post.last[:id]
+    end
 
     # Probably will need some query builder
     if @user_id.nil?
