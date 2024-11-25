@@ -35,8 +35,8 @@ RSpec.describe Post, type: :model do
     end
 
     describe "text-body validations" do
-      it "can't be created with text length > 2048" do
-        post[:text] = (0...2049).map { (65 + rand(26)).chr }.join
+      it "can't be created with text length > 512" do
+        post[:text] = (0...513).map { (65 + rand(26)).chr }.join
         expect(post.valid?).to be(false)
       end
 
