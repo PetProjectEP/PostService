@@ -19,12 +19,9 @@ default: &default
 
 development:
   <<: *default
-  #database: thoughts_junkyard_dev
   database: tj_production
-  host: <%= ENV["POST_SERVICE_DATABASE_HOST"] %>
-  port: <%= ENV["POST_SERVICE_DATABASE_PORT"] %>
-  username: <%= ENV["POST_SERVICE_DATABASE_USERNAME"] %>
-  password: <%= ENV["POST_SERVICE_DATABASE_PASSWORD"] %>
+  host: 172.17.0.1
+  port: 3307
 
 # Warning: The database defined as "test" will be erased and
 # re-generated from your development database when you run "rake".
